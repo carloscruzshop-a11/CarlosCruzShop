@@ -39,7 +39,7 @@ onValue(ref(db, "proizvodi"), snap => {
 onValue(ref(db, "kolekcije"), snap => {
   COLLECTIONS = snap.val() || {};
   renderSideDrawerCollections();
-  if (location.hash.startsWith("#/") === false || location.hash === "#/") renderHome();
+  router();
 });
 
 onValue(ref(db, "promo"), snap => {
@@ -518,6 +518,8 @@ function productCard(id, p) {
   div.addEventListener("click", () => { if (!justSwiped) goTo(`#/model/${toUrlSlug(p.naziv)}`); });
   const frame = div.querySelector(".pframe");
   if (imgs.length > 1) {
+    if (cardTimers[id + "_start"]) clearTimeout(cardTimers[id + "_start"]);
+    if (cardTimers[id]) clearInterval(cardTimers[id]);
     const randomDelay = Math.floor(Math.random() * 4000);
     let timer;
     const startTimer = setTimeout(() => {
@@ -568,11 +570,14 @@ function renderCollectionPage(slugOrNaziv) {
   view.innerHTML = `
     <div class="breadcrumbs"><a href="#/" onclick="goTo('#/')">Početna</a> / <a href="#/svi-modeli">Kolekcije</a> / <span>${naziv}</span></div>
     <section class="section">
-      <div class="section-head"><h2 class="collection-page-title">${naziv}</h2>${opis ? `<p style="font-size:15px;color:var(--ink-soft);max-width:560px;margin:12px auto 0;">${opis}</p>` : ""}</div>
+      <div class="section-head"><h2 class="collection-page-title">${naziv}</h2>${opis ? `<p style="font-size:15px;color:var(--ink-soft);max-width:560px;margin:12px auto 0;">${opis}</p>` : ""}
+        <button class="share-badge collection-share-btn" id="shareCollectionBtn" style="margin:14px auto 0;">${ICON_SHARE} Podeli kolekciju</button>
+      </div>
       <div class="grid-3" id="collectionGrid"></div>
     </section>
   `;
   const grid = document.getElementById("collectionGrid");
+  document.getElementById("shareCollectionBtn")?.addEventListener("click", () => shareCollection(naziv, opis, colEntry));
   if (!products.length) {
     grid.innerHTML = `<p style="grid-column:1/-1;text-align:center;color:var(--grey);">Trenutno nema modela u ovoj kolekciji.</p>`;
     return;
@@ -859,21 +864,24 @@ async function shareProduct(p, id) {
   const url = `${location.origin}${location.pathname}#/model/${toUrlSlug(p.naziv)}`;
   const priceText = p.akcija ? `${money(effectivePrice(p))} (umesto ${money(p.cena || 0)})` : money(p.cena || 0);
   const text = `${p.naziv} — ${p.kolekcija || ""} — ${priceText}`;
-  const imgUrl = p.dizajnSlika || imgOf(p);
 
-  // try sharing the image itself as a file, if supported
-  try {
-    const resp = await fetch(imgUrl);
-    const blob = await resp.blob();
-    const file = new File([blob], "carlos-cruz.jpg", { type: blob.type || "image/jpeg" });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: `Carlos Cruz — ${p.naziv}`, text: `${text}\n${url}` });
-      return;
-    }
-  } catch (e) { /* fall through to link-only share */ }
-
+  // share text + link together as ONE unit — reliable across apps.
+  // (sharing the image as a file makes some apps like Instagram/Viber drop the text or send it as a separate message, so we don't.)
   if (navigator.share) {
     try { await navigator.share({ title: `Carlos Cruz — ${p.naziv}`, text, url }); return; } catch (e) { /* canceled or unsupported */ }
+  }
+  try {
+    await navigator.clipboard.writeText(`${text}\n${url}`);
+  } catch (e) {
+    prompt("Kopiraj link:", url);
+  }
+}
+
+async function shareCollection(naziv, opis, colEntry) {
+  const url = `${location.origin}${location.pathname}#/kolekcija/${toUrlSlug(naziv)}`;
+  const text = opis ? `${naziv} — ${opis}` : naziv;
+  if (navigator.share) {
+    try { await navigator.share({ title: `Carlos Cruz — ${naziv}`, text, url }); return; } catch (e) { /* canceled or unsupported */ }
   }
   try {
     await navigator.clipboard.writeText(`${text}\n${url}`);
@@ -1303,16 +1311,13 @@ function drawCheckoutStep(saved = {}) {
       const inputEl = document.getElementById("ck_kod");
       if (res.ok) {
         appliedCode = res.code;
-        inputEl.classList.remove("err");
-        msgEl.style.color = "#1a7a3c";
-        msgEl.textContent = "Kod primenjen: " + res.code.kod;
+        drawCheckoutStep(saved);
       } else {
         appliedCode = null;
         inputEl.classList.add("err");
         msgEl.style.color = "var(--wine)";
         msgEl.textContent = res.msg;
       }
-      drawCheckoutStep(saved);
     });
     document.getElementById("backStep1").addEventListener("click", () => { checkoutStep = 1; drawCheckoutStep(saved); window.scrollTo(0, 0); });
     document.getElementById("confirmOrder").addEventListener("click", () => submitOrder(saved));
