@@ -864,9 +864,19 @@ async function shareProduct(p, id) {
   const url = `${location.origin}${location.pathname}#/model/${toUrlSlug(p.naziv)}`;
   const priceText = p.akcija ? `${money(effectivePrice(p))} (umesto ${money(p.cena || 0)})` : money(p.cena || 0);
   const text = `${p.naziv} — ${p.kolekcija || ""} — ${priceText}`;
+  const imgUrl = p.dizajnSlika || imgOf(p);
 
-  // share text + link together as ONE unit — reliable across apps.
-  // (sharing the image as a file makes some apps like Instagram/Viber drop the text or send it as a separate message, so we don't.)
+  // try sharing the image itself as a file, with text as caption
+  try {
+    const resp = await fetch(imgUrl);
+    const blob = await resp.blob();
+    const file = new File([blob], "carlos-cruz.jpg", { type: blob.type || "image/jpeg" });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: `Carlos Cruz — ${p.naziv}`, text: `${text}\n${url}` });
+      return;
+    }
+  } catch (e) { /* fall through to link-only share */ }
+
   if (navigator.share) {
     try { await navigator.share({ title: `Carlos Cruz — ${p.naziv}`, text, url }); return; } catch (e) { /* canceled or unsupported */ }
   }
@@ -880,6 +890,21 @@ async function shareProduct(p, id) {
 async function shareCollection(naziv, opis, colEntry) {
   const url = `${location.origin}${location.pathname}#/kolekcija/${toUrlSlug(naziv)}`;
   const text = opis ? `${naziv} — ${opis}` : naziv;
+  const firstProduct = Object.values(PRODUCTS).find(p => p.kolekcija === naziv);
+  const imgUrl = firstProduct ? (firstProduct.dizajnSlika || imgOf(firstProduct)) : null;
+
+  if (imgUrl) {
+    try {
+      const resp = await fetch(imgUrl);
+      const blob = await resp.blob();
+      const file = new File([blob], "carlos-cruz.jpg", { type: blob.type || "image/jpeg" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: `Carlos Cruz — ${naziv}`, text: `${text}\n${url}` });
+        return;
+      }
+    } catch (e) { /* fall through to link-only share */ }
+  }
+
   if (navigator.share) {
     try { await navigator.share({ title: `Carlos Cruz — ${naziv}`, text, url }); return; } catch (e) { /* canceled or unsupported */ }
   }

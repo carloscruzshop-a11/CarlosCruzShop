@@ -369,9 +369,7 @@ footer.site-footer{background:var(--ink); color:#fff; padding:56px 28px 30px;}
 .share-badge:hover{border-color:var(--ink); color:var(--ink);}
 @media (min-width:641px){
   .share-badge{display:none;}
-  .share-badge.collection-share-btn{display:flex; margin:14px auto 0 !important;}
 }
-.collection-share-btn{margin-left:0 !important;}
 .stars-wrapper .star{color:var(--line); font-size:15px;}
 .stars-wrapper .star.filled{color:var(--gold);}
 .rating-text{font-size:12.5px; color:var(--grey);}
