@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carlos Cruz — Admin</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<header class="a-mobile-bar">
+  <span class="a-mobile-title">CARLOS CRUZ ADMIN</span>
+  <button class="a-hamburger" id="aHamburgerBtn" aria-label="Meni"><span></span><span></span><span></span></button>
+</header>
+<div class="a-scrim" id="aScrim"></div>
+<div class="a-shell">
+  <aside class="a-side" id="aSide">
+    <h1>CARLOS CRUZ<br><small style="opacity:.5;font-size:11px;">ADMIN</small></h1>
+    <div class="a-tab active" data-tab="pregled">Pregled</div>
+    <div class="a-tab" data-tab="proizvodi">Modeli</div>
+    <div class="a-tab" data-tab="kolekcije">Kolekcije</div>
+    <div class="a-tab" data-tab="promo">Promo traka</div>
+    <div class="a-tab" data-tab="hero">Hero traka</div>
+    <div class="a-tab" data-tab="bestseleri">Najprodavaniji</div>
+    <div class="a-tab" data-tab="kodovi">Kodovi</div>
+    <div class="a-tab" data-tab="onama">O nama</div>
+    <div class="a-tab" data-tab="poruke">Poruke</div>
+    <div class="a-tab" data-tab="porudzbine">Porudžbine</div>
+    <div class="a-tab" data-tab="dostava">Dostava</div>
+  </aside>
+
+  <main class="a-main">
+    <div class="a-topbar"><h2 id="pageTitle">Pregled</h2><span id="ahClock"></span></div>
+
+    <section class="a-panel active" id="panel-pregled">
+      <div class="a-stat-row">
+        <div class="a-stat"><div class="num" id="statProizvodi">0</div><div class="lbl">Modela</div></div>
+        <div class="a-stat"><div class="num" id="statKolekcije">0</div><div class="lbl">Kolekcija</div></div>
+        <div class="a-stat"><div class="num" id="statPorudzbine">0</div><div class="lbl">Porudžbina</div></div>
+        <div class="a-stat"><div class="num" id="statPromo">0</div><div class="lbl">Promo poruka</div></div>
+      </div>
+      <div class="a-card">
+        <h3 style="margin-top:0;">Poslednje porudžbine</h3>
+        <table><thead><tr><th>Šifra</th><th>Kupac</th><th>Ukupno</th><th>Datum</th><th>Status</th></tr></thead><tbody id="recentOrders"></tbody></table>
+      </div>
+    </section>
+
+    <section class="a-panel" id="panel-proizvodi">
+      <div class="a-card">
+        <h3 style="margin-top:0;" id="formTitle">Dodaj model</h3>
+        <div class="grid-2">
+          <div><label>Naziv</label><input id="pf_naziv"></div>
+          <div><label>Cena (RSD)</label><input id="pf_cena" type="number"></div>
+        </div>
+        <label>Kolekcija</label>
+        <select id="pf_kolekcija"></select>
+        <label>Opis</label>
+        <textarea id="pf_opis" rows="3"></textarea>
+
+        <label>Boje</label>
+        <div class="chip-row" id="pf_boje">
+          <div class="chip selected" data-val="crna">crna</div>
+          <div class="chip selected" data-val="bela">bela</div>
+        </div>
+        <label>Pol</label>
+        <div class="chip-row" id="pf_pol">
+          <div class="chip selected" data-val="muška">muška</div>
+          <div class="chip selected" data-val="ženska">ženska</div>
+        </div>
+        <label>Veličine</label>
+        <div class="chip-row" id="pf_velicine">
+          <div class="chip selected" data-val="XS">XS</div>
+          <div class="chip selected" data-val="S">S</div>
+          <div class="chip selected" data-val="M">M</div>
+          <div class="chip selected" data-val="L">L</div>
+          <div class="chip selected" data-val="XL">XL</div>
+          <div class="chip selected" data-val="XXL">XXL</div>
+        </div>
+        <div class="chip-row">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:#333;"><input type="checkbox" id="pf_bestseler" style="width:auto;margin:0;"> Bestseler</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:#333;"><input type="checkbox" id="pf_novo" style="width:auto;margin:0;"> Novo (bedž)</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:#333;"><input type="checkbox" id="pf_popularno" style="width:auto;margin:0;"> Popularno (bedž)</label>
+        </div>
+        <label>Akcija — % popusta (ostavi prazno ili 0 ako nema akcije, maksimalno 50%)</label>
+        <input id="pf_akcija" type="number" min="0" max="50" step="1" placeholder="npr. 15" style="max-width:140px;">
+        <label>Ocena (rejting) — ostavi prazno za automatski izračunatu ocenu (minimum 4.6)</label>
+        <input id="pf_ocena" type="number" min="4.6" max="5" step="0.1" placeholder="npr. 4.8" style="max-width:140px;">
+
+        <label>Slike modela</label>
+        <div class="upload-drop" id="uploadDrop">Klikni ili prevuci slike ovde (šalje se na Cloudinary)</div>
+        <input type="file" id="fileInput" accept="image/*" multiple style="display:none;">
+        <p style="font-size:11.5px;color:#999;margin:-6px 0 10px;">
+          ★ = dizajn slika (prikazuje se malo umanjena u detaljima). <br>
+          ⚫/⚪/— = boja slike — klikni da postaviš crna/bela/ništa; kada kupac izabere boju, ta boja slike ide u korpu i porudžbinu. <br>
+          🔄 = da li se slika vrti u rotaciji na kartici proizvoda (zatamnjena = isključena).
+        </p>
+        <div class="img-thumb-row" id="imgThumbs"></div>
+
+        <div class="row-actions">
+          <button class="btn" id="saveProductBtn">Sačuvaj model</button>
+          <button class="btn secondary" id="cancelEditBtn" style="display:none;">Otkaži izmenu</button>
+        </div>
+      </div>
+
+      <div class="a-card">
+        <h3 style="margin-top:0;">Svi modeli</h3>
+        <table><thead><tr><th>Slika</th><th>Naziv</th><th>Kolekcija</th><th>Cena</th><th></th></tr></thead><tbody id="productsTable"></tbody></table>
+      </div>
+    </section>
+
+    <section class="a-panel" id="panel-kolekcije">
+      <div class="a-card">
+        <h3 style="margin-top:0;">Dodaj kolekciju</h3>
+        <input id="colName" placeholder="Naziv kolekcije">
+        <textarea id="colOpis" placeholder="Kratak opis kolekcije (prikazuje se na sajtu)" rows="2"></textarea>
+        <button class="btn" id="addColBtn">Dodaj kolekciju</button>
+      </div>
+      <div class="a-card">
+        <table><thead><tr><th>Naziv</th><th># modela</th><th></th></tr></thead><tbody id="colTable"></tbody></table>
+      </div>
+    </section>
+
+    <section class="a-panel" id="panel-promo">
+      <div class="a-card">
+        <h3 style="margin-top:0;">Dodaj promo poruku</h3>
+        <input id="promoText" placeholder="npr. Besplatna dostava iznad 5000 RSD">
+        <button class="btn" id="addPromoBtn">Dodaj poruku</button>
+      </div>
+      <div class="a-card">
+        <table><thead><tr><th>Tekst</th><th></th></tr></thead><tbody id="promoTable"></tbody></table>
+      </div>
+    </section>
+
+    <section class="a-panel" id="panel-hero">
+      <div class="a-card">
+        <h3 style="margin-top:0;">Slike za hero traku (početna strana)</h3>
+        <p style="font-size:12px;color:#888;margin-top:-8px;">
+          Biraš od modela koji imaju označenu ★ dizajn sliku (tab "Modeli"). Klik na sliku
+          u hero traci na sajtu vodi direktno na taj model. Ako ne izabereš nijedan, sajt
+          automatski prikazuje dizajn slike svih modela (bez linka na klik).
+        </p>
+        <div id="heroProductPicker"></div>
+      </div>
+      <div class="a-card">
+        <h3 style="margin-top:0;">Tekst pokretne trake ispod hero sekcije</h3>
+        <input id="tickerTextInput" placeholder="npr. BESPLATNA DOSTAVA IZNAD 5000 RSD">
+        <button class="btn" id="saveTickerBtn">Sačuvaj tekst trake</button>
+      </div>
+    </section>
+
+    <section class="a-panel" id="panel-bestseleri">
+      <div class="a-card">
+        <h3 style="margin-top:0;">Redosled bestselera</h3>
+        <p style="font-size:12px;color:#888;margin-top:-8px;">Prevuci model da promeniš redosled kojim se prikazuje u "Najprodavaniji modeli" sekciji na početnoj. Prikazuju se samo modeli označeni kao Bestseler.</p>
+        <div id="bestsellerOrderList"></div>
+      </div>
+    </section>
+
+    <section class="a-panel" id="panel-kodovi">
+      <div class="a-card">
+        <h3 style="margin-top:0;">Dodaj kod za popust</h3>
+        <div class="grid-2">
+          <div><label>Kod</label><input id="kod_naziv" placeholder="npr. CARLOSCRUZ" style="text-transform:uppercase;"></div>
+          <div><label>Tip popusta</label>
+            <select id="kod_tip">
+              <option value="procenat">Procenat (%)</option>
+              <option value="fiksno">Fiksan iznos (RSD)</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div><label>Vrednost</label><input id="kod_vrednost" type="number"></div>
+          <div><label>Rok isteka (opciono)</label><input id="kod_rok" type="date"></div>
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#333;margin-bottom:14px;">
+          <input type="checkbox" id="kod_jednokratna" style="width:auto;margin:0;"> Jednokratna upotreba
+        </label>
+        <button class="btn" id="addKodBtn">Dodaj kod</button>
+      </div>
+      <div class="a-card">
+        <table><thead><tr><th>Kod</th><th>Tip</th><th>Vrednost</th><th>Jednokratna</th><th>Rok</th><th>Iskorišćen</th><th></th></tr></thead><tbody id="kodoviTable"></tbody></table>
+      </div>
+    </section>
+
+    <section class="a-panel" id="panel-onama">
+      <div class="a-card">
+        <h3 style="margin-top:0;">Slike — gornji red (tekst levo, slike desno)</h3>
+        <p style="font-size:12px;color:#888;margin-top:-8px;">Ako dodaš više slika, na sajtu se automatski smenjuju.</p>
+        <div class="upload-drop" id="onamaGoreDrop">Klikni ili prevuci slike ovde</div>
+        <input type="file" id="onamaGoreInput" accept="image/*" multiple style="display:none;">
+        <div class="img-thumb-row" id="onamaGoreThumbs"></div>
+      </div>
+      <div class="a-card">
+        <h3 style="margin-top:0;">Slike — donji red (slike levo, tekst desno)</h3>
+        <div class="upload-drop" id="onamaDoleDrop">Klikni ili prevuci slike ovde</div>
+        <input type="file" id="onamaDoleInput" accept="image/*" multiple style="display:none;">
+        <div class="img-thumb-row" id="onamaDoleThumbs"></div>
+      </div>
+    </section>
+
+    <section class="a-panel" id="panel-poruke">
+      <div class="a-card">
+        <table><thead><tr><th>Ime</th><th>Email</th><th>Poruka</th><th>Datum</th><th></th></tr></thead><tbody id="messagesTable"></tbody></table>
+      </div>
+    </section>
+
+    <section class="a-panel" id="panel-porudzbine">
+      <div class="a-card orders-card">
+        <div class="orders-table-wrap">
+        <table><thead><tr><th>Šifra</th><th>Kupac</th><th>Kontakt</th><th>Stavke</th><th>Ukupno</th><th>Kod</th><th>Datum</th><th>Status</th><th></th></tr></thead><tbody id="ordersTable"></tbody></table>
+        </div>
+      </div>
+    </section>
+
+    <section class="a-panel" id="panel-dostava">
+      <div class="a-card">
+        <h3 style="margin-top:0;">Cena dostave</h3>
+        <p style="font-size:12px;color:#888;margin-top:-8px;">Ova cena se automatski dodaje u checkout-u, u koraku "Pregled porudžbine".</p>
+        <input id="dostavaCenaInput" type="number" min="0" step="10" style="max-width:180px;">
+        <button class="btn" id="saveDostavaBtn">Sačuvaj cenu dostave</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="liveNotifContainer"></div>
+<div id="toast-container"></div>
+
+<div class="confirm-scrim" id="confirmScrim">
+  <div class="confirm-box">
+    <p id="confirmMessage">Da li si siguran?</p>
+    <div class="confirm-actions">
+      <button class="btn secondary" id="confirmCancelBtn">Otkaži</button>
+      <button class="btn danger" id="confirmOkBtn">Obriši</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="admin.js"></script>
+</body>
+</html>

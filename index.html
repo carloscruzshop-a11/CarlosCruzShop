@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carlos Cruz</title>
+<meta name="description" content="Carlos Cruz — premium majice, ograničene kolekcije.">
+<meta property="og:title" content="Carlos Cruz">
+<meta property="og:description" content="Premium majice. Ograničene kolekcije.">
+<meta property="og:image" content="https://carloscruz.rs/assets/icons/og-share-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://carloscruz.rs">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Carlos Cruz">
+<meta name="twitter:description" content="Premium majice. Ograničene kolekcije.">
+<meta name="twitter:image" content="https://carloscruz.rs/assets/icons/og-share-image.png">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16x16.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="promo-top" id="promoTop"><span id="promoTopText">Dobrodošli u Carlos Cruz</span><button class="promo-close" id="promoClose" aria-label="Zatvori">✕</button></div>
+
+<header class="site-header">
+  <div class="header-left">
+    <button class="hamburger-btn" id="hamburgerBtn" aria-label="Meni"><span></span><span></span><span></span></button>
+    <nav class="nav-inline">
+      <a href="#/" onclick="goTo('#/')">Početna</a>
+      <a href="#/svi-modeli" onclick="goTo('#/svi-modeli')">Svi modeli</a>
+      <a href="#/kontakt" onclick="goTo('#/kontakt')">Kontakt</a>
+    </nav>
+  </div>
+  <div class="brand" onclick="goTo('#/')">CARLOS CRUZ</div>
+  <div class="header-right">
+    <div class="search-box">
+      <button class="icon-btn" id="searchIcon" aria-label="Pretraga">
+        <svg viewBox="0 0 24 24" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
+      <input type="text" id="searchInput" placeholder="Pretraži...">
+    </div>
+    <button class="icon-btn" onclick="openCart()" aria-label="Korpa">
+      <svg viewBox="0 0 24 24" stroke-width="1.6"><path d="M3 3h2l2.4 12.4a2 2 0 0 0 2 1.6h8.2a2 2 0 0 0 2-1.6L21 8H6"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg>
+      <span class="cart-count-text" id="cartBadge">(0)</span>
+    </button>
+  </div>
+</header>
+
+<div class="overlay-scrim" id="scrim"></div>
+
+<aside class="side-drawer" id="sideDrawer">
+  <button class="close-x drawer-close" onclick="closeDrawer()">✕</button>
+  <nav>
+    <a href="#/" onclick="goTo('#/')">Početna</a>
+    <div class="sd-label sd-collections" id="sdCollections">
+      Kolekcije
+      <div id="drawerCollections" class="sd-sub-wrap"></div>
+    </div>
+    <a href="#/svi-modeli" onclick="goTo('#/svi-modeli')">Svi modeli</a>
+    <a href="#/faq" onclick="goTo('#/faq')">Česta pitanja</a>
+    <a href="#/o-nama" onclick="goTo('#/o-nama')">O nama</a>
+    <a href="#/kontakt" onclick="goTo('#/kontakt')">Kontakt</a>
+  </nav>
+  <div class="drawer-search">
+    <button class="icon-btn" id="drawerSearchIcon" aria-label="Pretraga">
+      <svg viewBox="0 0 24 24" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </button>
+    <input type="text" id="drawerSearchInput" placeholder="Pretraži...">
+  </div>
+</aside>
+
+<aside class="cart-drawer" id="cartDrawer">
+  <div class="cart-head"><h3>KORPA</h3><button class="close-x" onclick="closeCart()">✕</button></div>
+  <div class="cart-items" id="cartItems"></div>
+  <div class="cart-foot" id="cartFoot"></div>
+</aside>
+
+<main id="view"></main>
+
+<footer class="site-footer">
+  <div class="footer-grid">
+    <div>
+      <div class="footer-brand serif">CARLOS CRUZ</div>
+      <p style="font-size:13px;color:rgba(255,255,255,0.7);max-width:300px;line-height:1.7;">Jedinstven dizajn. Vrhunski materijali. Ograničene serije za one koji ne pristaju na kompromise. Obuci Carlos Cruz i budi zapamćen.</p>
+    </div>
+    <div class="footer-col">
+      <h5>BRZI LINKOVI</h5>
+      <a href="#/" onclick="goTo('#/')">Početna</a>
+      <a href="#/svi-modeli" onclick="goTo('#/svi-modeli')">Svi modeli</a>
+      <a href="#/faq" onclick="goTo('#/faq')">Česta pitanja</a>
+      <a href="#/o-nama" onclick="goTo('#/o-nama')">O nama</a>
+      <a href="#/kontakt" onclick="goTo('#/kontakt')">Kontakt</a>
+    </div>
+    <div class="footer-col">
+      <h5>PRATITE NAS</h5>
+      <a href="https://instagram.com/carloscruz" target="_blank" rel="noopener" class="footer-social"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1"/></svg> Instagram</a>
+      <a href="https://tiktok.com/@carloscruz" target="_blank" rel="noopener" class="footer-social"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M16.5 3c.3 1.9 1.6 3.4 3.5 3.7v2.9c-1.3 0-2.5-.4-3.5-1.1v6.6c0 3.3-2.7 6-6 6s-6-2.7-6-6 2.7-6 6-6c.3 0 .6 0 .9.1v3.1c-.3-.1-.6-.2-.9-.2-1.7 0-3 1.3-3 3s1.3 3 3 3 3-1.3 3-3V3h3z"/></svg> TikTok</a>
+    </div>
+  </div>
+  <div class="footer-legal-row">
+    <a href="#/info/privatnost" onclick="goTo('#/info/privatnost')">Politika privatnosti</a>
+    <a href="#/info/uslovi" onclick="goTo('#/info/uslovi')">Uslovi korišćenja</a>
+    <a href="#/info/isporuka" onclick="goTo('#/info/isporuka')">Isporuka i dostava</a>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 Carlos Cruz. Sva prava zadržana.</span>
+    <span class="footer-dot">·</span>
+    <span>S ponosom kreirao: <a href="https://mswebstudio.rs" target="_blank" rel="noopener">MS Web Studio</a></span>
+  </div>
+</footer>
+
+<!-- SIZE CHART MODAL -->
+<div class="modal-scrim" id="sizeChartModal">
+  <div class="modal-box">
+    <button class="close-x" onclick="closeSizeChart()">✕</button>
+    <div class="modal-tabs">
+      <button class="active" data-t="m" onclick="setSizeTab('m')">Muške majice</button>
+      <button data-t="z" onclick="setSizeTab('z')">Ženske majice</button>
+    </div>
+    <div id="sizeChartContent"></div>
+  </div>
+</div>
+
+<div class="modal-scrim" id="factsModal">
+  <div class="modal-box">
+    <button class="close-x" onclick="closeFactsModal()">✕</button>
+    <h3 class="serif" style="margin-top:0;font-style:italic;font-weight:400;">O materijalu i izradi</h3>
+    <div id="factsContent"></div>
+  </div>
+</div>
+
+
+<script>
+document.getElementById("hamburgerBtn").addEventListener("click", () => window.openDrawer());
+document.getElementById("promoClose").addEventListener("click", () => {
+  const bar = document.getElementById("promoTop");
+  bar.classList.add("hidden");
+  setTimeout(() => bar.classList.remove("hidden"), 30000);
+});
+document.getElementById("drawerSearchInput").addEventListener("keydown", e => { if (e.key === "Enter") window.doSearch(e.target.value); });
+document.getElementById("drawerSearchIcon").addEventListener("click", () => window.doSearch(document.getElementById("drawerSearchInput").value));
+</script>
+<script type="module" src="main.js"></script>
+</body>
+</html>
