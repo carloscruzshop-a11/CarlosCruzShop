@@ -369,6 +369,7 @@ footer.site-footer{background:var(--ink); color:#fff; padding:56px 28px 30px;}
 .share-badge:hover{border-color:var(--ink); color:var(--ink);}
 @media (min-width:641px){
   .share-badge{display:none;}
+  .share-badge.share-badge-visible{display:flex;}
 }
 .stars-wrapper .star{color:var(--line); font-size:15px;}
 .stars-wrapper .star.filled{color:var(--gold);}
@@ -518,7 +519,7 @@ footer.site-footer{background:var(--ink); color:#fff; padding:56px 28px 30px;}
   .drawer-search input{border:none; outline:none; font-size:13.5px; width:100%; background:transparent;}
   .brand{font-size:16px; letter-spacing:0.1em;}
   .side-drawer nav a, .side-drawer nav .sd-label{font-size:22px;}
-  .sd-sub-wrap a.sd-sub{font-size:15px !important;}
+  .sd-sub-wrap a.sd-sub{font-size:15px !important; padding-left:26px !important;}
   .section{padding:44px 16px;}
   .grid-4{grid-template-columns:repeat(2,1fr); gap:14px 10px;}
   .grid-3{grid-template-columns:repeat(2,1fr); gap:14px 10px;}
@@ -581,8 +582,8 @@ footer.site-footer{background:var(--ink); color:#fff; padding:56px 28px 30px;}
 @media (max-width:768px){
   .about-title{font-size:28px !important;}
   .about-row, .about-row.reverse{grid-template-columns:1fr; gap:24px; margin-bottom:44px;}
-  .about-row.reverse .about-text{order:2;}
-  .about-row.reverse .about-img-frame{order:1;}
+  .about-row.reverse .about-text{order:1;}
+  .about-row.reverse .about-img-frame{order:2;}
   .about-row .about-text{order:1;}
   .about-row .about-img-frame{order:2;}
   .about-img-frame{max-width:220px;}

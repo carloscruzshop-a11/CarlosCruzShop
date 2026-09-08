@@ -12,7 +12,7 @@
 body{margin:0;font-family:'Libre Bodoni',serif;background:#f4f3f0;color:#151515;}
 input, select, textarea, button{font-family:inherit;}
 .a-shell{display:grid; grid-template-columns:220px 1fr; min-height:100vh;}
-.a-side{background:#111; color:#eee; padding:26px 18px; position:sticky; top:0; height:100vh;}
+.a-side{background:#111; color:#eee; padding:26px 18px; position:sticky; top:0; height:100vh; overflow-y:auto;}
 .a-side h1{font-size:16px; letter-spacing:0.1em; margin:0 0 30px;}
 .a-tab{display:block; padding:11px 12px; font-size:13px; color:#bbb; cursor:pointer; border-radius:4px; margin-bottom:4px;}
 .a-tab.active, .a-tab:hover{background:#232323; color:#fff;}

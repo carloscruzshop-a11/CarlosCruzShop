@@ -16,6 +16,7 @@ document.querySelectorAll(".a-tab").forEach(tab => {
     document.getElementById("panel-" + tab.dataset.tab).classList.add("active");
     document.getElementById("pageTitle").textContent = tab.textContent;
     closeAdminDrawer();
+    if (tab.dataset.tab === "statistika") renderStatistika();
   });
 });
 
@@ -97,13 +98,14 @@ function renderMessagesTable() {
 }
 
 /* ---------- FIREBASE LISTENERS ---------- */
-onValue(ref(db, "proizvodi"), snap => { PRODUCTS = snap.val() || {}; renderProductsTable(); renderStats(); fillKolekcijaSelect(); renderBestsellerOrderList(); renderHeroPicker(); });
+onValue(ref(db, "proizvodi"), snap => { PRODUCTS = snap.val() || {}; renderProductsTable(); renderStats(); fillKolekcijaSelect(); renderBestsellerOrderList(); renderHeroPicker(); renderRecommendations(); });
 onValue(ref(db, "kolekcije"), snap => { COLLECTIONS = snap.val() || {}; renderCollectionsTable(); renderStats(); fillKolekcijaSelect(); });
 onValue(ref(db, "promo"), snap => { PROMO = snap.val() || {}; renderPromoTable(); renderStats(); });
 onValue(ref(db, "porudzbine"), snap => {
   ORDERS = snap.val() || {};
   detectNewOrders(ORDERS);
-  renderOrdersTable(); renderRecentOrders(); renderStats();
+  renderOrdersTable(); renderRecentOrders(); renderStats(); renderRecommendations();
+  if (document.getElementById("panel-statistika")?.classList.contains("active")) renderStatistika();
 });
 onValue(ref(db, "poruke"), snap => {
   MESSAGES = snap.val() || {};
@@ -409,19 +411,27 @@ function renderPromoTable() {
 /* ============================================================
    PORUDŽBINE
    ============================================================ */
-function ordersSorted() {
-  return Object.entries(ORDERS).sort((a, b) => (b[1].datum || 0) - (a[1].datum || 0));
+const ARCHIVE_DAYS = 7;
+function isArchived(o) {
+  return o.status === "poslato" || (Date.now() - (o.datum || 0)) > ARCHIVE_DAYS * 24 * 60 * 60 * 1000;
+}
+function ordersSorted(archived = false) {
+  return Object.entries(ORDERS)
+    .filter(([id, o]) => isArchived(o) === archived)
+    .sort((a, b) => (b[1].datum || 0) - (a[1].datum || 0));
 }
 function renderRecentOrders() {
   const host = document.getElementById("recentOrders");
-  host.innerHTML = ordersSorted().slice(0, 5).map(([id, o]) => `
+  host.innerHTML = ordersSorted(false).slice(0, 5).map(([id, o]) => `
     <tr><td>${o.sifra || '—'}</td><td>${o.ime || ''}</td><td>${money(o.ukupno)}</td><td>${new Date(o.datum).toLocaleString("sr-RS")}</td><td><span class="badge-small">${o.status || 'nova'}</span></td></tr>
   `).join("") || `<tr><td colspan="5" style="color:#999;">Nema porudžbina još.</td></tr>`;
 }
-function renderOrdersTable() {
-  const host = document.getElementById("ordersTable");
+function renderOrderRows(hostId, archived) {
+  const host = document.getElementById(hostId);
+  if (!host) return;
   const statusClass = s => s === "nova" ? "row-nova" : s === "u obradi" ? "row-obradi" : s === "poslato" ? "row-poslato" : "";
-  host.innerHTML = ordersSorted().map(([id, o]) => `
+  const list = ordersSorted(archived);
+  host.innerHTML = list.map(([id, o]) => `
     <tr class="${statusClass(o.status || 'nova')}">
       <td style="font-weight:600;">${o.sifra || '—'}</td>
       <td>${o.ime || ''}<br><span style="color:#999;">${o.adresa || ''}, ${o.grad || ''}</span></td>
@@ -444,13 +454,17 @@ function renderOrdersTable() {
       </td>
       <td><button class="btn danger" data-delorder="${id}">Obriši</button></td>
     </tr>
-  `).join("") || `<tr><td colspan="9" style="color:#999;">Nema porudžbina još.</td></tr>`;
+  `).join("") || `<tr><td colspan="9" style="color:#999;">${archived ? "Nema arhiviranih porudžbina još." : "Nema porudžbina još."}</td></tr>`;
   host.querySelectorAll("[data-status]").forEach(sel => sel.addEventListener("change", () => {
     update(ref(db, "porudzbine/" + sel.dataset.status), { status: sel.value });
   }));
   host.querySelectorAll("[data-delorder]").forEach(btn => btn.addEventListener("click", () => {
     showConfirmModal("Obriši ovu porudžbinu?", () => remove(ref(db, "porudzbine/" + btn.dataset.delorder)).then(() => showToast("Porudžbina obrisana.")));
   }));
+}
+function renderOrdersTable() {
+  renderOrderRows("ordersTable", false);
+  renderOrderRows("historyTable", true);
 }
 
 /* ============================================================
@@ -609,10 +623,17 @@ function renderBestsellerOrderList() {
       <div class="bs-order-item" draggable="true" data-id="${id}">
         <span class="bs-drag-handle">⠿</span>
         <img src="${(p.slike && p.slike[0]) || ''}">
-        <span class="bs-name">${p.naziv}</span>
+        <span class="bs-name" style="flex:1;">${p.naziv}</span>
+        <button class="btn danger" data-removebest="${id}" style="margin-left:auto;">Ukloni</button>
       </div>
     `;
   }).join("");
+  host.querySelectorAll("[data-removebest]").forEach(btn => btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    showConfirmModal("Ukloni ovaj model iz Bestselera?", () => {
+      update(ref(db, "proizvodi/" + btn.dataset.removebest), { bestseler: false }).then(() => showToast("Uklonjen iz Bestselera."));
+    });
+  }));
   wireBestsellerDrag(host);
 }
 
@@ -756,3 +777,163 @@ document.getElementById("saveDostavaBtn").addEventListener("click", () => {
   if (isNaN(val) || val < 0) { showToast("Unesi ispravnu cenu.", "error"); return; }
   set(ref(db, "cenaDostave"), val).then(() => showToast("Cena dostave sačuvana."));
 });
+
+/* ============================================================
+   SPECIJALNE PONUDE
+   ============================================================ */
+onValue(ref(db, "specijalnePonude"), snap => {
+  const d = snap.val() || {};
+  const c1 = document.getElementById("ponuda_korpa5000");
+  const c2 = document.getElementById("ponuda_kupi3");
+  if (c1 && document.activeElement !== c1) c1.checked = !!d.korpaPreko5000;
+  if (c2 && document.activeElement !== c2) c2.checked = !!d.kupi3Modela;
+});
+document.getElementById("saveSpecijalnePonudeBtn").addEventListener("click", () => {
+  const data = {
+    korpaPreko5000: document.getElementById("ponuda_korpa5000").checked,
+    kupi3Modela: document.getElementById("ponuda_kupi3").checked
+  };
+  set(ref(db, "specijalnePonude"), data).then(() => showToast("Specijalne ponude sačuvane."));
+});
+
+/* ============================================================
+   PREPORUKE ZA NAJPRODAVANIJE (na osnovu prodaje + pregleda)
+   ============================================================ */
+let PREGLEDI = {};
+onValue(ref(db, "pregledi"), snap => { PREGLEDI = snap.val() || {}; renderRecommendations(); });
+
+function computeSalesCounts() {
+  const sales = {};
+  Object.values(ORDERS).forEach(o => {
+    (o.stavke || []).forEach(s => {
+      if (!s.id) return;
+      sales[s.id] = (sales[s.id] || 0) + (s.kolicina || 1);
+    });
+  });
+  return sales;
+}
+
+function renderRecommendations() {
+  const host = document.getElementById("recommendationsTable");
+  if (!host) return;
+  const sales = computeSalesCounts();
+  const scored = Object.entries(PRODUCTS)
+    .filter(([id, p]) => !p.bestseler)
+    .map(([id, p]) => {
+      const prodaja = sales[id] || 0;
+      const pregledi = PREGLEDI[id] || 0;
+      const score = prodaja * 3 + pregledi * 1;
+      return { id, p, prodaja, pregledi, score };
+    })
+    .filter(r => r.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5);
+
+  host.innerHTML = scored.map(r => `
+    <tr>
+      <td>${r.p.naziv}</td>
+      <td>${r.prodaja}</td>
+      <td>${r.pregledi}</td>
+      <td>${ratingLabel(r.p)}</td>
+      <td><button class="btn" data-addbest="${r.id}">Dodaj u Bestseler</button></td>
+    </tr>
+  `).join("") || `<tr><td colspan="5" style="color:#999;">Nema još dovoljno podataka (prodaje/pregleda) za preporuku.</td></tr>`;
+
+  host.querySelectorAll("[data-addbest]").forEach(btn => btn.addEventListener("click", () => {
+    update(ref(db, "proizvodi/" + btn.dataset.addbest), { bestseler: true }).then(() => showToast("Dodato u Bestseler."));
+  }));
+}
+function ratingLabel(p) {
+  return p.ocena ? Number(p.ocena).toFixed(1) : "auto";
+}
+document.getElementById("resetPregledeBtn")?.addEventListener("click", () => {
+  showConfirmModal("Resetovati brojač pregleda za sve modele? Ovo se ne može vratiti.", () => {
+    set(ref(db, "pregledi"), null).then(() => showToast("Brojač pregleda resetovan."));
+  });
+});
+
+/* ============================================================
+   STATISTIKA — jednostavni bar grafici (canvas, bez biblioteka)
+   ============================================================ */
+function drawBarChart(canvasId, labels, values, opts = {}) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = canvas.parentElement.clientWidth;
+  const cssH = parseInt(canvas.style.height) || 260;
+  canvas.width = cssW * dpr;
+  canvas.height = cssH * dpr;
+  canvas.style.width = cssW + "px";
+  const ctx = canvas.getContext("2d");
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, cssW, cssH);
+
+  if (!values.length) {
+    ctx.fillStyle = "#999"; ctx.font = "13px sans-serif";
+    ctx.fillText("Nema podataka još.", 10, 30);
+    return;
+  }
+
+  const padL = 46, padB = opts.rotateLabels ? 70 : 30, padT = 16, padR = 10;
+  const w = cssW - padL - padR, h = cssH - padT - padB;
+  const maxVal = Math.max(...values, 1);
+  const barGap = 8;
+  const barW = Math.max(6, (w / values.length) - barGap);
+
+  // y-axis grid lines
+  ctx.strokeStyle = "#eee"; ctx.fillStyle = "#999"; ctx.font = "10px sans-serif"; ctx.textAlign = "right";
+  const steps = 4;
+  for (let i = 0; i <= steps; i++) {
+    const y = padT + h - (h * i / steps);
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(cssW - padR, y); ctx.stroke();
+    ctx.fillText(Math.round(maxVal * i / steps).toLocaleString("sr-RS"), padL - 6, y + 3);
+  }
+
+  values.forEach((v, i) => {
+    const x = padL + i * (barW + barGap) + barGap / 2;
+    const barH = (v / maxVal) * h;
+    const y = padT + h - barH;
+    ctx.fillStyle = opts.color || "#111";
+    ctx.fillRect(x, y, barW, barH);
+
+    ctx.save();
+    ctx.fillStyle = "#555"; ctx.font = "10px sans-serif";
+    const label = labels[i];
+    if (opts.rotateLabels) {
+      ctx.translate(x + barW / 2, cssH - padB + 8);
+      ctx.rotate(-Math.PI / 4);
+      ctx.textAlign = "right";
+      ctx.fillText(label.length > 18 ? label.slice(0, 18) + "…" : label, 0, 0);
+    } else {
+      ctx.textAlign = "center";
+      ctx.fillText(label, x + barW / 2, cssH - padB + 14);
+    }
+    ctx.restore();
+  });
+}
+
+function renderStatistika() {
+  if (!document.getElementById("chartSalesByDate")) return;
+
+  // sales by date (last 30 days that have sales)
+  const byDate = {};
+  Object.values(ORDERS).forEach(o => {
+    const d = new Date(o.datum);
+    const key = d.toLocaleDateString("sr-RS", { day: "2-digit", month: "2-digit" });
+    const sortKey = d.toISOString().slice(0, 10);
+    if (!byDate[sortKey]) byDate[sortKey] = { label: key, total: 0 };
+    byDate[sortKey].total += o.ukupno || 0;
+  });
+  const dateEntries = Object.entries(byDate).sort((a, b) => a[0].localeCompare(b[0])).slice(-30);
+  drawBarChart("chartSalesByDate", dateEntries.map(e => e[1].label), dateEntries.map(e => e[1].total), { color: "#111" });
+
+  // top products by quantity sold
+  const sales = computeSalesCounts();
+  const topProducts = Object.entries(sales)
+    .map(([id, qty]) => ({ naziv: PRODUCTS[id] ? PRODUCTS[id].naziv : "(obrisan model)", qty }))
+    .sort((a, b) => b.qty - a.qty)
+    .slice(0, 10);
+  drawBarChart("chartTopProducts", topProducts.map(p => p.naziv), topProducts.map(p => p.qty), { color: "#6d1f22", rotateLabels: true });
+}
+
+window.addEventListener("resize", () => { if (document.getElementById("panel-statistika")?.classList.contains("active")) renderStatistika(); });

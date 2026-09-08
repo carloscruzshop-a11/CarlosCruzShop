@@ -26,7 +26,9 @@
     <div class="a-tab" data-tab="onama">O nama</div>
     <div class="a-tab" data-tab="poruke">Poruke</div>
     <div class="a-tab" data-tab="porudzbine">Porudžbine</div>
+    <div class="a-tab" data-tab="istorija">Istorija porudžbina</div>
     <div class="a-tab" data-tab="dostava">Dostava</div>
+    <div class="a-tab" data-tab="statistika">Statistika</div>
   </aside>
 
   <main class="a-main">
@@ -38,6 +40,16 @@
         <div class="a-stat"><div class="num" id="statKolekcije">0</div><div class="lbl">Kolekcija</div></div>
         <div class="a-stat"><div class="num" id="statPorudzbine">0</div><div class="lbl">Porudžbina</div></div>
         <div class="a-stat"><div class="num" id="statPromo">0</div><div class="lbl">Promo poruka</div></div>
+      </div>
+      <div class="a-card">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:14px; flex-wrap:wrap;">
+          <div>
+            <h3 style="margin-top:0;">Preporuka — koje modele guraj u Najprodavaniji</h3>
+            <p style="font-size:12px;color:#888;margin-top:-8px;">Računato na osnovu broja prodaja (iz porudžbina) i broja poseta stranici modela. Prikazuju se oni koji JOŠ NISU označeni kao Bestseler.</p>
+          </div>
+          <button class="btn secondary" id="resetPregledeBtn" style="white-space:nowrap;">Resetuj brojač pregleda</button>
+        </div>
+        <table><thead><tr><th>Model</th><th>Prodaja</th><th>Pregledi</th><th>Ocena</th><th></th></tr></thead><tbody id="recommendationsTable"></tbody></table>
       </div>
       <div class="a-card">
         <h3 style="margin-top:0;">Poslednje porudžbine</h3>
@@ -121,6 +133,17 @@
     </section>
 
     <section class="a-panel" id="panel-promo">
+      <div class="a-card">
+        <h3 style="margin-top:0;">Specijalne ponude</h3>
+        <p style="font-size:12px;color:#888;margin-top:-8px;">Kad uključiš neku od ovih, stvarno se primenjuje na sajtu (besplatna dostava u checkout-u) i automatski se dodaje u promo traku gore.</p>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#333;margin-bottom:14px;">
+          <input type="checkbox" id="ponuda_korpa5000" style="width:auto;margin:0;"> Besplatna dostava za korpu preko 5000 RSD
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#333;margin-bottom:14px;">
+          <input type="checkbox" id="ponuda_kupi3" style="width:auto;margin:0;"> Besplatna dostava kad se kupe 3 ili više modela
+        </label>
+        <button class="btn" id="saveSpecijalnePonudeBtn">Sačuvaj specijalne ponude</button>
+      </div>
       <div class="a-card">
         <h3 style="margin-top:0;">Dodaj promo poruku</h3>
         <input id="promoText" placeholder="npr. Besplatna dostava iznad 5000 RSD">
@@ -206,8 +229,18 @@
 
     <section class="a-panel" id="panel-porudzbine">
       <div class="a-card orders-card">
+        <p style="font-size:12px;color:#888;margin:0 0 12px;">Prikazuju se aktivne porudžbine. Porudžbina automatski prelazi u "Istoriju" čim je označiš kao "Poslato", ili nakon 7 dana od datuma porudžbine.</p>
         <div class="orders-table-wrap">
         <table><thead><tr><th>Šifra</th><th>Kupac</th><th>Kontakt</th><th>Stavke</th><th>Ukupno</th><th>Kod</th><th>Datum</th><th>Status</th><th></th></tr></thead><tbody id="ordersTable"></tbody></table>
+        </div>
+      </div>
+    </section>
+
+    <section class="a-panel" id="panel-istorija">
+      <div class="a-card orders-card">
+        <p style="font-size:12px;color:#888;margin:0 0 12px;">Arhivirane porudžbine (poslate ili starije od 7 dana).</p>
+        <div class="orders-table-wrap">
+        <table><thead><tr><th>Šifra</th><th>Kupac</th><th>Kontakt</th><th>Stavke</th><th>Ukupno</th><th>Kod</th><th>Datum</th><th>Status</th><th></th></tr></thead><tbody id="historyTable"></tbody></table>
         </div>
       </div>
     </section>
@@ -218,6 +251,18 @@
         <p style="font-size:12px;color:#888;margin-top:-8px;">Ova cena se automatski dodaje u checkout-u, u koraku "Pregled porudžbine".</p>
         <input id="dostavaCenaInput" type="number" min="0" step="10" style="max-width:180px;">
         <button class="btn" id="saveDostavaBtn">Sačuvaj cenu dostave</button>
+      </div>
+    </section>
+
+    <section class="a-panel" id="panel-statistika">
+      <div class="a-card">
+        <h3 style="margin-top:0;">Prodaja po datumu</h3>
+        <p style="font-size:12px;color:#888;margin-top:-8px;">Ukupna vrednost porudžbina po danu (poslednjih 30 dana sa prodajom).</p>
+        <canvas id="chartSalesByDate" style="width:100%; height:260px;"></canvas>
+      </div>
+      <div class="a-card">
+        <h3 style="margin-top:0;">Najprodavaniji modeli (po količini)</h3>
+        <canvas id="chartTopProducts" style="width:100%; height:300px;"></canvas>
       </div>
     </section>
   </main>

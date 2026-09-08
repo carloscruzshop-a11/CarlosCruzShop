@@ -6,6 +6,8 @@ import { db, ref, onValue, push, set, update, remove, runTransaction } from "./f
 let PRODUCTS = {};      // proizvodi/{id}
 let COLLECTIONS = {};   // kolekcije/{id}
 let PROMO = [];         // promo texts
+let SPECIJALNE_PONUDE = {};
+onValue(ref(db, "specijalnePonude"), snap => { SPECIJALNE_PONUDE = snap.val() || {}; startPromoRotation(); });
 let HERO_SLIKE = [];    // admin-picked hero marquee images
 let KODOVI = {};        // popust kodovi/{id}
 let cart = [];
@@ -72,6 +74,49 @@ let knownOrderIds = null;
    HELPERS
    ============================================================ */
 function money(n) { return Math.round(n).toLocaleString("sr-RS") + " RSD"; }
+
+/* ============================================================
+   EMAILJS — potvrda porudžbine (kupac + vlasnik)
+   ============================================================ */
+const EMAILJS_PUBLIC_KEY = "Hx_e2DUctFUwfBFjl";
+const EMAILJS_SERVICE_ID = "service_b5ptq8o";
+const EMAILJS_TEMPLATE_KUPAC = "template_7lv6lfo";
+const EMAILJS_TEMPLATE_VLASNIK = "template_xrts9yc";
+if (window.emailjs) window.emailjs.init(EMAILJS_PUBLIC_KEY);
+
+function formatStavke(cart) {
+  return cart.map(i =>
+    `${i.naziv} × ${i.kolicina} — ${(i.boja || "").toUpperCase()}, ${(i.pol || "").toUpperCase()}, ${(i.velicina || "").toUpperCase()} — ${money(i.cena * i.kolicina)}`
+  ).join("\n");
+}
+
+function buildEmailParams(order) {
+  const popust_red = order.popustKod
+    ? `<tr><td style="padding: 4px 0; color: #1a7a3c;">Popust (${order.popustKod})</td><td style="padding: 4px 0; text-align: right; color: #1a7a3c; white-space: nowrap;">−${money(order.popustIznos)}</td></tr>`
+    : "";
+  return {
+    order_id: order.sifra,
+    ime: order.ime || "",
+    adresa: order.adresa || "",
+    grad: order.grad || "",
+    postanski: order.postanski || "",
+    telefon: order.telefon || "",
+    email: order.email || "",
+    stavke: formatStavke(order.stavke || []),
+    vrednost_korpe: money(order.proizvodi || 0),
+    cena_dostave: order.dostava === 0 ? "BESPLATNO" : money(order.dostava || 0),
+    konacna_cena: money(order.ukupno || 0),
+    popust_red,
+    napomena: order.napomena || "—"
+  };
+}
+
+function sendOrderEmails(order) {
+  if (!window.emailjs) return;
+  const params = buildEmailParams(order);
+  window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_KUPAC, params).catch(err => console.error("EmailJS (kupac) greška:", err));
+  window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_VLASNIK, params).catch(err => console.error("EmailJS (vlasnik) greška:", err));
+}
 function effectivePrice(p) {
   const base = p.cena || 0;
   if (p.akcija) return Math.round(base * (1 - p.akcija / 100));
@@ -129,25 +174,33 @@ window.showToast = showToast;
    PROMO TOP BAR ROTATION
    ============================================================ */
 let promoIdx = 0, promoInterval;
+function activePromoMessages() {
+  const extra = [];
+  if (SPECIJALNE_PONUDE.korpaPreko5000) extra.push("Korpa preko 5000 RSD — besplatna poštarina");
+  if (SPECIJALNE_PONUDE.kupi3Modela) extra.push("Kupi 3 bilo koja modela — besplatna poštarina");
+  return [...extra, ...PROMO];
+}
 function startPromoRotation() {
   const el = document.getElementById("promoTopText");
   if (!el) return;
-  if (!PROMO.length) { el.textContent = "Dobrodošli u Carlos Cruz"; return; }
+  const messages = activePromoMessages();
+  if (!messages.length) { el.textContent = "Dobrodošli u Carlos Cruz"; return; }
   promoIdx = 0;
   updatePromoText();
   if (promoInterval) clearInterval(promoInterval);
   promoInterval = setInterval(() => {
-    promoIdx = (promoIdx + 1) % PROMO.length;
+    promoIdx = (promoIdx + 1) % activePromoMessages().length;
     updatePromoText();
   }, 3800);
 }
 function updatePromoText() {
   const el = document.getElementById("promoTopText");
-  if (!el || !PROMO.length) return;
+  const messages = activePromoMessages();
+  if (!el || !messages.length) return;
   el.style.transition = "opacity .4s, transform .4s";
   el.style.opacity = 0; el.style.transform = "translateY(4px)";
   setTimeout(() => {
-    el.textContent = PROMO[promoIdx];
+    el.textContent = messages[promoIdx];
     el.style.opacity = 1; el.style.transform = "translateY(0)";
   }, 400);
 }
@@ -202,25 +255,25 @@ function renderHome() {
     <div class="ticker-strip"><div class="ticker-track" id="tickerTrack"></div></div>
 
     <section class="section">
-      <div class="section-head left-align"><h2>Najprodavaniji modeli</h2><div class="eyebrow-link" onclick="goTo('#/svi-modeli')">Pogledaj sve modele</div></div>
+      <div class="section-head left-align"><h2>Najprodavaniji modeli</h2><div class="eyebrow-link" onclick="goTo('#/svi-modeli')">Pogledaj sve modele →</div></div>
       <div class="grid-4 bestseller-grid" id="bestsellerGrid"></div>
     </section>
 
     <div id="collectionsHome"></div>
 
     <section class="trust-section section">
-      <div class="section-head"><h2>Kupovina bez brige</h2></div>
+      <div class="section-head"><h2>Vaše poverenje, naš standard.</h2></div>
       <div class="trust-grid">
         <div class="trust-item"><div class="emoji">${ICON_TRUCK}</div><h4>Brza isporuka</h4><p>Isporuka širom Srbije za 5–7 dana.</p></div>
         <div class="trust-item"><div class="emoji">${ICON_CASH}</div><h4>Plaćanje pouzećem</h4><p>Platite kuriru pri preuzimanju, bez brige.</p></div>
-        <div class="trust-item"><div class="emoji">${ICON_DIAMOND}</div><h4>Ekskluzivnost</h4><p>Ograničene kolekcije</p></div>
+        <div class="trust-item"><div class="emoji">${ICON_DIAMOND}</div><h4>Ekskluzivnost</h4><p>Ograničene kolekcije.</p></div>
         <div class="trust-item"><div class="emoji">${ICON_SPARKLE}</div><h4>Premium brend</h4><p>Pažljivo biran materijal i dizajn.</p></div>
       </div>
     </section>
 
     <section class="cta-band">
       <div class="cta-content">
-        <h2>Pogledajte sve naše modele</h2>
+        <h2>Otkrijte sve Carlos Cruz modele.</h2>
         <button onclick="goTo('#/svi-modeli')">SVI MODELI</button>
       </div>
     </section>
@@ -668,6 +721,7 @@ function renderProductDetail(slugOrId) {
     view.innerHTML = `<div class="notfound-wrap"><h1 class="serif">404</h1><p>Model nije pronađen.</p><a href="#/" class="btn-dark" style="display:inline-block;width:auto;padding:14px 30px;">Nazad na početnu</a></div>`;
     return;
   }
+  runTransaction(ref(db, "pregledi/" + id), cur => (cur || 0) + 1).catch(() => {});
   const imgs = imagesOf(p);
   const boje = p.boje || ["crna", "bela"];
   const polovi = p.polovi || ["muška", "ženska"];
@@ -789,6 +843,7 @@ function renderProductDetail(slugOrId) {
     const onTouchEnd = (x, e) => {
       if (startX === null) return;
       if (e.target.closest(".gal-arrow, .zoom-hint")) { startX = null; return; }
+      e.preventDefault(); // stop the browser's follow-up synthetic mouse/click event from also firing (was opening zoom on every tap)
       const diff = x - startX;
       if (imgs.length > 1 && Math.abs(diff) > 40) {
         setImg(detailState.imgIndex + (diff < 0 ? 1 : -1));
@@ -952,7 +1007,7 @@ function sizeTableHTML(type) {
       </tbody>
     </table>
     <p class="size-table-note">Mere su okvirne i mogu odstupati ±1–2 cm zavisno od modela.<br>A — poluobim grudi (izmereno od šava do šava)<br>B — dužina majice od ramena do dna</p>
-    <button class="btn-outline" id="shareSizeChartBtn" style="width:auto; padding:10px 20px; margin-top:4px;">Podeli kao sliku</button>
+    <button class="share-badge share-badge-visible" id="shareSizeChartBtn" style="margin:4px auto 0;">${ICON_SHARE} Podeli kao sliku</button>
   `;
 }
 function drawSizeChartCanvas(type) {
@@ -1191,12 +1246,20 @@ onValue(ref(db, "cenaDostave"), snap => { const v = snap.val(); if (v !== null &
 
 function computeTotals() {
   const subtotal = cart.reduce((s, i) => s + i.cena * i.kolicina, 0);
+  const totalQty = cart.reduce((s, i) => s + i.kolicina, 0);
   let discount = 0;
   if (appliedCode) {
     discount = appliedCode.tip === "procenat" ? subtotal * (appliedCode.vrednost / 100) : Math.min(appliedCode.vrednost, subtotal);
   }
-  const finalTotal = Math.max(0, subtotal - discount) + DELIVERY_FEE;
-  return { subtotal, discount, finalTotal };
+  let deliveryFee = DELIVERY_FEE;
+  let besplatnaDostavaRazlog = null;
+  if (SPECIJALNE_PONUDE.korpaPreko5000 && subtotal > 5000) {
+    deliveryFee = 0; besplatnaDostavaRazlog = "korpa preko 5000 RSD";
+  } else if (SPECIJALNE_PONUDE.kupi3Modela && totalQty >= 3) {
+    deliveryFee = 0; besplatnaDostavaRazlog = "kupljena 3 ili više modela";
+  }
+  const finalTotal = Math.max(0, subtotal - discount) + deliveryFee;
+  return { subtotal, discount, finalTotal, deliveryFee, besplatnaDostavaRazlog };
 }
 
 function renderCheckoutPage() {
@@ -1290,7 +1353,7 @@ function drawCheckoutStep(saved = {}) {
       window.scrollTo(0, 0);
     });
   } else if (checkoutStep === 2) {
-    const { subtotal, discount, finalTotal } = computeTotals();
+    const { subtotal, discount, finalTotal, deliveryFee, besplatnaDostavaRazlog } = computeTotals();
     view.innerHTML = `
       <div class="checkout-page">
         ${stepperHTML()}
@@ -1319,7 +1382,7 @@ function drawCheckoutStep(saved = {}) {
             </div>
             <div class="checkout-summary-item"><span>Modeli</span><span>${money(subtotal)}</span></div>
             ${appliedCode ? `<div class="checkout-summary-item" style="color:#1a7a3c;"><span>Popust (${appliedCode.kod}${appliedCode.tip === "procenat" ? ` −${appliedCode.vrednost}%` : ""})</span><span>−${money(discount)}</span></div>` : ""}
-            <div class="checkout-summary-item"><span>Dostava</span><span>${money(DELIVERY_FEE)}</span></div>
+            <div class="checkout-summary-item"><span>Dostava${besplatnaDostavaRazlog ? ` <span style="color:#1a7a3c;font-size:11px;">(besplatno — ${besplatnaDostavaRazlog})</span>` : ""}</span><span>${deliveryFee === 0 ? "BESPLATNO" : money(deliveryFee)}</span></div>
             <div class="checkout-total"><span>Ukupno za plaćanje</span><span>${money(finalTotal)}</span></div>
             <div class="trust-emojis-row"><span>${ICON_LOCK} Sigurna kupovina</span><span>${ICON_SPARKLE} Premium brend</span><span>${ICON_CASH} Plaćanje pouzećem</span></div>
           </div>
@@ -1360,7 +1423,7 @@ async function generateOrderCode() {
 }
 
 async function submitOrder(customer) {
-  const { subtotal, discount, finalTotal } = computeTotals();
+  const { subtotal, discount, finalTotal, deliveryFee } = computeTotals();
   const sifra = await generateOrderCode();
   const order = {
     sifra,
@@ -1370,7 +1433,7 @@ async function submitOrder(customer) {
     proizvodi: subtotal,
     popustKod: appliedCode ? appliedCode.kod : null,
     popustIznos: discount,
-    dostava: DELIVERY_FEE,
+    dostava: deliveryFee,
     ukupno: finalTotal,
     datum: Date.now(),
     status: "nova"
@@ -1380,6 +1443,7 @@ async function submitOrder(customer) {
       const codeData = KODOVI[appliedCode.id];
       if (codeData && codeData.jednokratna) remove(ref(db, "kodovi/" + appliedCode.id));
     }
+    sendOrderEmails(order);
     cart = []; saveCart(); renderCart();
     document.getElementById("view").innerHTML = `
       <div class="checkout-page">
@@ -1403,6 +1467,10 @@ function doSearch(q) {
   if (!q) return;
   closeDrawer();
   goTo(`#/pretraga/${encodeURIComponent(q)}`);
+  const headerInput = document.getElementById("searchInput");
+  const drawerInput = document.getElementById("drawerSearchInput");
+  if (headerInput) headerInput.value = "";
+  if (drawerInput) drawerInput.value = "";
 }
 window.doSearch = doSearch;
 
