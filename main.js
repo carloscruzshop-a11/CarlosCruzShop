@@ -757,7 +757,8 @@ function renderProductDetail(slugOrId) {
       <div class="zoom-overlay" id="zoomOverlay"><button class="close-x">✕</button><img id="zoomImg" src=""></div>
       <div class="detail-info">
         <div class="detail-collection-tag" id="detailCollectionTag" style="cursor:pointer;" data-kolekcija="${(p.kolekcija || "").replace(/"/g, "&quot;")}">${(p.kolekcija || "").toUpperCase()}</div>
-        ${(p.novo || p.popularno || p.akcija) ? `<div class="badge-stack-inline">
+        ${(p.majica || p.novo || p.popularno || p.akcija) ? `<div class="badge-stack-inline">
+          ${p.majica ? '<span class="badge badge-majica">MAJICA</span>' : ''}
           ${p.novo ? '<span class="badge badge-novo">NOVO</span>' : ''}
           ${p.popularno ? '<span class="badge badge-popularno">POPULARNO</span>' : ''}
           ${p.akcija ? `<span class="badge badge-akcija">AKCIJA ${p.akcija}%</span>` : ''}

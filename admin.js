@@ -271,6 +271,7 @@ document.getElementById("saveProductBtn").addEventListener("click", async () => 
     bestseler: document.getElementById("pf_bestseler").checked,
     novo: document.getElementById("pf_novo").checked,
     popularno: document.getElementById("pf_popularno").checked,
+    majica: document.getElementById("pf_majica").checked,
     akcija: Math.min(50, Math.max(0, Number(document.getElementById("pf_akcija").value) || 0)) || null,
     slike: pendingImages,
     dizajnSlika: pendingDesignUrl || null,
@@ -304,6 +305,7 @@ function resetProductForm() {
   document.getElementById("pf_bestseler").checked = false;
   document.getElementById("pf_novo").checked = false;
   document.getElementById("pf_popularno").checked = false;
+  document.getElementById("pf_majica").checked = false;
   document.getElementById("pf_akcija").value = "";
   document.getElementById("pf_ocena").value = "";
   document.querySelectorAll("#pf_boje .chip, #pf_pol .chip, #pf_velicine .chip").forEach(c => c.classList.add("selected"));
@@ -351,6 +353,7 @@ function editProduct(id) {
   document.getElementById("pf_bestseler").checked = !!p.bestseler;
   document.getElementById("pf_novo").checked = !!p.novo;
   document.getElementById("pf_popularno").checked = !!p.popularno;
+  document.getElementById("pf_majica").checked = !!p.majica;
   document.getElementById("pf_akcija").value = p.akcija || "";
   document.getElementById("pf_ocena").value = p.ocena || "";
   const setChips = (containerId, vals) => {
@@ -365,14 +368,28 @@ function editProduct(id) {
 /* ============================================================
    KOLEKCIJE
    ============================================================ */
+let editingColId = null;
+let editingColOldNaziv = null;
 document.getElementById("addColBtn").addEventListener("click", async () => {
   const naziv = document.getElementById("colName").value.trim();
   const opis = document.getElementById("colOpis").value.trim();
   if (!naziv) return;
-  await push(ref(db, "kolekcije"), { naziv, opis });
+  if (editingColId) {
+    await update(ref(db, "kolekcije/" + editingColId), { naziv, opis });
+    if (editingColOldNaziv && editingColOldNaziv !== naziv) {
+      const affected = Object.entries(PRODUCTS).filter(([id, p]) => p.kolekcija === editingColOldNaziv);
+      await Promise.all(affected.map(([id]) => update(ref(db, "proizvodi/" + id), { kolekcija: naziv })));
+    }
+    showToast("Kolekcija izmenjena.");
+    editingColId = null;
+    editingColOldNaziv = null;
+    document.getElementById("addColBtn").textContent = "Dodaj kolekciju";
+  } else {
+    await push(ref(db, "kolekcije"), { naziv, opis });
+    showToast("Kolekcija dodata.");
+  }
   document.getElementById("colName").value = "";
   document.getElementById("colOpis").value = "";
-  showToast("Kolekcija dodata.");
 });
 
 function renderCollectionsTable() {
@@ -380,10 +397,20 @@ function renderCollectionsTable() {
   host.innerHTML = Object.entries(COLLECTIONS).map(([id, c]) => {
     const naziv = c.naziv || c;
     const count = Object.values(PRODUCTS).filter(p => p.kolekcija === naziv).length;
-    return `<tr><td>${naziv}</td><td>${count}</td><td><button class="btn danger" data-delcol="${id}">Obriši</button></td></tr>`;
+    return `<tr><td>${naziv}</td><td>${count}</td><td class="row-actions"><button class="btn secondary" data-editcol="${id}">Izmeni</button><button class="btn danger" data-delcol="${id}">Obriši</button></td></tr>`;
   }).join("") || `<tr><td colspan="3" style="color:#999;">Nema kolekcija još.</td></tr>`;
   host.querySelectorAll("[data-delcol]").forEach(btn => btn.addEventListener("click", () => {
     showConfirmModal("Obriši ovu kolekciju? (Modeli ostaju, samo se uklanja iz menija)", () => remove(ref(db, "kolekcije/" + btn.dataset.delcol)).then(() => showToast("Kolekcija obrisana.")));
+  }));
+  host.querySelectorAll("[data-editcol]").forEach(btn => btn.addEventListener("click", () => {
+    const id = btn.dataset.editcol;
+    const c = COLLECTIONS[id];
+    editingColId = id;
+    editingColOldNaziv = c.naziv || c || "";
+    document.getElementById("colName").value = c.naziv || c || "";
+    document.getElementById("colOpis").value = c.opis || "";
+    document.getElementById("addColBtn").textContent = "Sačuvaj izmene";
+    document.getElementById("colName").scrollIntoView({ behavior: "smooth", block: "center" });
   }));
 }
 
